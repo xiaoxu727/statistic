@@ -36,3 +36,4 @@ print(data)
 print(data['food'].map(lambda x:meat_to_animal[x.lower()]))
 
 logger.info('转换值')
+
