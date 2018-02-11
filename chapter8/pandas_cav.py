@@ -3,18 +3,20 @@ from pandas import DataFrame, Series
 import numpy as np
 import matplotlib.pyplot as plt
 def line():
-    fig = plt.Figure()
-    ax1 = fig.add_subplot(2, 2, 1)
-    ax2 = fig.add_subplot(2, 2, 2)
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2,2,1)
+    ax2 = fig.add_subplot(2,2,2)
     s = Series(np.random.randn(10).cumsum(), index=np.arange(0, 100, 10))
-    s.plot()
+    s.plot(ax=ax2)
     plt.show()
     # print(s)
 def multi_lines():
-
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
     df = DataFrame(np.random.randn(10, 4).cumsum(0),
                    columns=['A', 'B', 'C', 'D'],
                    index=np.arange(0, 100, 10))
+    df.plot(ax=ax)
     plt.show()
 def bar():
     fig, axes = plt.subplots(2, 1)
@@ -24,5 +26,5 @@ def bar():
     plt.show()
 if __name__ == '__main__':
     # line()
-    # multi_lines()
-    bar()
+    multi_lines()
+    # bar()
