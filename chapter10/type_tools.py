@@ -8,6 +8,8 @@ from pandas import  DataFrame
 from pandas.tseries.offsets import Hour, Minute
 from pandas.tseries.offsets import Day, MonthEnd
 import pytz
+import matplotlib.pyplot as plt
+from scipy.stats import percentileofscore
 
 
 def basic():
@@ -183,6 +185,153 @@ def period():
     print(p.asfreq('M', how='start'))
     print(p.asfreq('M', how='end'))
 
+    p = pd.Period('2007-08', 'M')
+    print(p.asfreq('A-JUN'))
+    print(p)
+
+    rng = pd.period_range('2006', '2009', freq='A-DEC')
+    ts = Series(np.random.randn(len(rng)), index=rng)
+    print(ts)
+
+    print(ts.asfreq('M', how='start'))
+    print(ts.asfreq('B', how='end'))
+
+    p = pd.Period('2012Q4', freq='Q-JAN')
+    print(p)
+    print(p.asfreq('D', 'start'))
+    print(p.asfreq('D', 'end'))
+
+    p4pm = (p.asfreq('B', 'end')-1).asfreq('T', 's') + 16 * 60
+    print(p4pm)
+
+    rng = pd.period_range('2011Q3', '2012Q4', freq='Q-JAN')
+    ts = Series(np.arange(len(rng)), index=rng)
+
+
+# error!!
+def timestamp_2_period():
+    rng = pd.period_range('2001/1/1', periods=3, freq='M')
+    ts = Series(np.random.randn(3), index=rng)
+    print(ts)
+    print(type(ts))
+    pts = Series.to_period(ts)
+    print(pts)
+
+
+def periodIndex():
+    data = pd.read_csv('../chapter8/data/macrodata.csv')
+    print(data.year)
+    print(data.quarter)
+
+    index = pd.PeriodIndex(year=data.year, quarter=data.quarter, freq='Q-DEC')
+
+    print(index)
+    data.index = index
+    print(data.infl)
+
+
+def resample_frequency():
+    rng = pd.date_range('1/1/2000', periods=100, freq='D')
+    ts = Series(np.arange(100), index=rng)
+
+    print(ts)
+    print(ts.resample('M').mean())
+    print(ts.resample('M', kind='period').mean())
+
+#     降采样
+    rng = pd.date_range('1/1/2000', periods=12, freq='T')
+    ts = Series(np.arange(12), index=rng)
+    print(ts)
+    print(ts.resample('5min').sum())
+    print(ts.resample('5min', closed='left').sum())
+    print(ts.resample('5min', closed='right').sum())
+    print(ts.resample('5min', closed='right', label='left').sum())
+    print(ts.resample('5min', closed='right', label='right').sum())
+    print(ts.resample('5min', closed='right', label='right', loffset='-1s').sum())
+
+# OHLC重新采样
+    print(ts.resample('5min').ohlc())
+    # groupby 重采样
+    print(ts.groupby(lambda x: x.month).mean())
+    print(ts.groupby(lambda x: x.weekday).mean())
+
+# 升采样和插值
+    frame = DataFrame(np.random.randn(2, 4),
+                      index=pd.date_range('1/1/2000', periods=2, freq='W-WED'),
+                      columns=['Colorado', 'Texas', 'New York', 'Ohio'])
+    print(frame)
+    df_daily = frame.resample('D')
+    print(df_daily.mean())
+    print(frame.resample('D').ffill(limit=2))
+
+# 通过时期进行重新采样
+    frame = DataFrame(np.random.randn(23, 4),
+                      index=pd.date_range('1-2000', '12-2001', freq='M'),
+                      columns=['Colorado', 'Texas', 'New York', 'Ohio'])
+    print(frame)
+    annual_frame = frame.resample('A-DEC').mean()
+    print(annual_frame)
+
+    print(annual_frame.resample('Q-DEC').ffill())
+    print(annual_frame.resample('Q-DEC', convention='start').ffill())
+
+
+def time_draw():
+    close_px_all = pd.read_csv('../chapter9/data/stock_px.csv', parse_dates=True, index_col=0)
+    close_px = close_px_all[['AAPL', 'MSFT', 'XOM']]
+    close_px = close_px.resample('B').ffill()
+    print(close_px)
+    # close_px['AAPL'].plot()
+    # close_px.ix['2009'].plot()
+    # close_px['AAPL'].ix['01-2011':'03-2011'].plot()
+    # appl_q = close_px['AAPL'].resample('Q-DEC').ffill()
+    # appl_q.ix['2009':].plot()
+    # 移动窗口函数
+    # close_px.AAPL.plot()
+    # pd.rolling_mean(close_px.AAPL, 250).plot()
+    #
+    # appl_std250 = pd.rolling_std(close_px.AAPL, 250, min_periods=50)
+    # print(appl_std250[5:12])
+    # appl_std250.plot()
+
+    # pd.rolling_mean(close_px.AAPL, 10).plot(logy=True)
+    # pd.rolling_mean(close_px.AAPL, 30).plot(logy=True)
+    # pd.rolling_mean(close_px.AAPL, 60).plot(logy=True)
+    # pd.rolling_mean(close_px.AAPL, 100).plot(logy=True)
+    # close_px.AAPL.plot()
+    # # 指数加权函数
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=True, figsize=(12,7))
+    appl_px = close_px.AAPL['2005': '2009']
+    # ma60 = pd.rolling_mean(appl_px, 60, min_periods=50)
+    # ma60 = Series.rolling(appl_px, 60, min_periods=50).mean()
+    # # ewa60 = pd.ewma(appl_px, span=60)
+    # ewa60 = Series.ewm(appl_px, span=60).mean()
+    #
+    # appl_px.plot(style='k-', ax=axes[0])
+    # ma60.plot(style='k--', ax=axes[0])
+    # appl_px.plot(style='k-', ax=axes[1])
+    # ewa60.plot(style='k--', ax=axes[1])
+    # axes[0].set_title('Simple MA')
+    # axes[1].set_title('Expontially-weighted MA')
+
+    spx_px = close_px_all['SPX']
+    spx_px_sets = spx_px/spx_px.shift(1)-1
+
+    returns = close_px.pct_change()
+    # corr = pd.rolling_corr(returns.AAPL, spx_px_sets, 125, min_periods=100)
+    # corr = Series.rolling(returns.AAPL,window=125, min_periods=100).corr(spx_px_sets)
+    # corr.plot(ax=axes[0])
+    # # corr = pd.rolling_corr(returns, spx_px_sets, 125, min_periods=100)
+    # corr = DataFrame.rolling(returns,window=125, min_periods=100).corr(spx_px_sets)
+    # corr.plot(ax=axes[1])
+    score_at_2percent = lambda x: percentileofscore(x, 0.02)
+    # result = pd.rolling_apply(returns.AAPL, 250, score_at_2percent)
+    result = Series.rolling(returns.AAPL, 250).apply(score_at_2percent)
+    result.plot()
+
+    plt.show()
+
+
 if __name__ == '__main__':
     # str_to_datetime()
     # timeseries_basic()
@@ -193,4 +342,8 @@ if __name__ == '__main__':
     # frequency()
     # shift()
     # timezone()
-    period()
+    # period()
+    # timestamp_2_period()
+    # periodIndex()
+    # resample_frequency()
+    time_draw()
