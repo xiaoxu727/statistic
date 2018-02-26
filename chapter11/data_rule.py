@@ -1,8 +1,11 @@
+import random; random.seed(0)
+import string
 import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
 from datetime import time
 # import pandas.io.data as web
+from statsmodels.formula.api import ols
 from pandas_datareader import data as web
 
 def data():
@@ -108,6 +111,51 @@ def returns():
     ret_index = (1+returns).cumprod()
     print(ret_index)
 
+N = 1000
+def rands(n):
+    choices = string.ascii_uppercase
+    return ''.join([random.choice(choices) for _ in range(n)])
+def zscore(group):
+    return (group -group.mean()) / group.std()
+
+M = 500
+def get_tickers():
+    tickers = np.array([rands(5) for _ in range(N)])
+    # print(tickers)
+    # print(tickers[:M])
+    df = DataFrame({'Momentum': np.random.randn(M) / 200 + 0.03,
+                   'Value': np.random.randn(M) / 200 + 0.08,
+                   'ShortInterest': np.random.randn(M) / 200 - 0.02},
+                   index=tickers[:M])
+    # print(tickers)
+    ind_names = np.array(['FINANCIAL', 'TEC'])
+    sampler = np.random.randint(0, len(ind_names), N)
+    industries = Series(ind_names[sampler], index=tickers, name='industry')
+    print(industries)
+    by_industry = df.groupby(industries)
+    print(by_industry.mean())
+    print(by_industry.describe())
+    df_stand = by_industry.apply(zscore)
+    print(df_stand)
+    # print(df_stand.describe())
+    print(df_stand.groupby(industries).agg(['mean', 'std']))
+
+    ind_rank = by_industry.rank(ascending=False)
+    print(ind_rank.groupby(industries).agg(['min', 'max']))
+    print(ind_rank.apply(lambda x: zscore(x.rank())))
+
+    fac1, fac2, fac3 = np.random.randn(3, 1000)
+    ticker_subset = tickers.take(np.random.permutation(N)[:1000])
+    # print(ticker_subset)
+    port = Series(0.7*fac1 - 1.2 * fac2 + 0.3 * fac3 + np.random.rand(1000), index=ticker_subset)
+    factors = DataFrame({'f1': fac1, 'f2': fac2, 'f3': fac3}, index=ticker_subset)
+    print(factors.corrwith(port))
+    print(pd.stats.ols(y=port, x=factors).beta)
+
+def group_analysis():
+    return
+
+
 
 if __name__ == '__main__':
     # prices, volume = data()
@@ -119,8 +167,16 @@ if __name__ == '__main__':
     # time_selection()
     # multi_data()
     # returns()
-    print(np.arange(18).reshape(6, 3))
-    data1 = DataFrame(np.arange(3 * 6).reshape(3, 6),
-                      columns=['a', 'b', 'c'],
-                      index=pd.date_range('6/12/2012', periods=6))
+    # print(np.arange(18).reshape((6, 3)))
+    # data1 = DataFrame(np.arange(3 * 6).reshape((6, 3)),
+    #                   columns=['a', 'b', 'c'],
+    #                   index=pd.date_range('6/12/2012', periods=6))
+    #
+    # print(data1)
     # print(data1.pct_change())
+
+    # print(rands(3))
+    get_tickers()
+    # test = np.array([1, 2, 3])
+    # print(test.take([0]))
+    # print(np.random.permutation(10))
